@@ -1,0 +1,6 @@
+@Sep2026.QuizConsoleAppWebApi_HostAddress = http://localhost:5049
+
+GET {{Sep2026.QuizConsoleAppWebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
