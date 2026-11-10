@@ -1,4 +1,4 @@
-﻿namespace Sep2026.QuizConsoleAppWebApi.Models
+﻿namespace Sep2026.QuizConsoleAppWebApi.Models.AnswerModels
 {
     public class AnswerResponse
     {

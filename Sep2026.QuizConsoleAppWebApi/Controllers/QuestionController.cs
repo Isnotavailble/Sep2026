@@ -3,16 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Sep2026.QuizConsoleApp.Database.AppDbContextModels;
-using Sep2026.QuizConsoleAppWebApi.Models;
+using Sep2026.QuizConsoleAppWebApi.Models.AnswerModels;
+using Sep2026.QuizConsoleAppWebApi.Models.QuestionModels;
 
 namespace Sep2026.QuizConsoleAppWebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class QuizController : ControllerBase
+    public class QuestionController : ControllerBase
     {
         private AppDbContext _db;
-        public QuizController()
+        public QuestionController()
         {
             _db = new AppDbContext();
         }
@@ -152,7 +153,11 @@ namespace Sep2026.QuizConsoleAppWebApi.Controllers
                 }   
             }
 
-            _db.SaveChanges();
+            int status = _db.SaveChanges();
+
+            if (status < 1)
+                return BadRequest("Request was not updated");
+
             return Ok(ConvertToResponse(targetQuestion));
 
         }

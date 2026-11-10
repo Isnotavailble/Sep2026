@@ -1,6 +1,7 @@
-﻿using System.Data;
+﻿using Sep2026.QuizConsoleAppWebApi.Models.AnswerModels;
+using System.Data;
 
-namespace Sep2026.QuizConsoleAppWebApi.Models
+namespace Sep2026.QuizConsoleAppWebApi.Models.QuestionModels
 {
     public class QuestionCreateRequest
     {

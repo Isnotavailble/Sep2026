@@ -1,0 +1,6 @@
+@Sep2026.QuizConsoleAppWebApiDapper_HostAddress = http://localhost:5121
+
+GET {{Sep2026.QuizConsoleAppWebApiDapper_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
