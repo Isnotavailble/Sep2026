@@ -66,6 +66,7 @@ namespace Sep2026.QuizConsoleAppWebApi.Controllers
                 return NotFound($"No category with Id {id}");
 
             targetCategory.CategoryName = string.IsNullOrEmpty(categoryUpdateRequest.CategoryName) ? targetCategory.CategoryName : categoryUpdateRequest.CategoryName;
+            _db.SaveChanges();
             return Ok(ConvertToResponse(targetCategory));
         }
 
