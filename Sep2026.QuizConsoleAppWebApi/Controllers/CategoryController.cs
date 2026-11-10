@@ -38,10 +38,13 @@ namespace Sep2026.QuizConsoleAppWebApi.Controllers
             int totalEntities = _db.Categories.Count();
             if (totalEntities > 0)
                 return BadRequest("Category Mock is already created");
+
             _db.Categories.Add(category1);
             _db.Categories.Add(category2);
             _db.Categories.Add(category3);
+
             int status = _db.SaveChanges();
+
             if (status < 1)
                 return StatusCode(StatusCodes.Status500InternalServerError, "Couldn't insert the categories");
             List<Category> response = [category1, category2, category3];

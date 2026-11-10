@@ -97,38 +97,67 @@ namespace Sep2026.QuizConsoleAppWebApi.Controllers
 
         }
 
-        //[HttpPatch("{id}")]
-        //public IActionResult UpdateQuestoins(int id, QuestionUpdateRequest updateRequest) {
+        [HttpPatch("{id}")]
+        public IActionResult UpdateQuestoins(int id, QuestionUpdateRequest updateRequest)
+        {
             
-            
-        //    var targetQuestion = _db.Questions.Include(t => t.Answers).FirstOrDefault(x => x.Id == id);
+            var targetQuestion = _db.Questions.Include(t => t.Answers).FirstOrDefault(x => x.Id == id);
 
-        //    var validCategory = _db.Categories.Where(c => c.Id == updateRequest.CategoryId).FirstOrDefault();
-            
-        //    if (targetQuestion == null)
-        //        return NotFound($"Question with Id {id} doesn't exsit");
+            if (targetQuestion == null)
+                return NotFound($"Question with Id {id} doesn't exsit");
 
-            
-        //    if (!string.IsNullOrEmpty(updateRequest.Statement)) {
-        //        targetQuestion.Statement = updateRequest.Statement.Trim();
-        //    }
+            var validCategory = updateRequest.CategoryId > 0 || updateRequest.CategoryId != null ?
+                            _db.Categories.Where(c => c.Id == updateRequest.CategoryId).FirstOrDefault() :
+                            _db.Categories.Where(c => c.Id == targetQuestion.CategoryId).FirstOrDefault();
 
-        //    if (validCategory != null)
-        //    {
-        //        targetQuestion.CategoryId = validCategory.Id;
-        //    }
+            //Update Statement
+            if (!string.IsNullOrEmpty(updateRequest.Statement))
+            {
+                targetQuestion.Statement = updateRequest.Statement.Trim();
+            }
+            //Update Category
+            if (validCategory != null)
+            {
+                targetQuestion.CategoryId = validCategory.Id;
+            }
+            //Update AnswersList
+            if (updateRequest?.AnswersList?.Count > 0)
+            {
 
-        //    if (updateRequest?.AnswersList?.Count > 0)
-        //    {
-        //        var updateAnswersIds = updateRequest.AnswersList.Select(a => a.Id ).ToList();
-        //        var updateAnsersids = 
-        //    }
+                var updateAnswersIds = updateRequest.AnswersList
+                    .Select(a => a.Id)
+                    .ToList();
+                
+                var targetAnswers = targetQuestion.Answers
+                    .Where(a => updateAnswersIds.Contains(a.Id))
+                    .ToList();
+
+                foreach (var targetAnswer in targetAnswers)
+                {
+                    var updateRequestAnswer = updateRequest.AnswersList
+                        .FirstOrDefault(ans => targetAnswer.Id == ans.Id);
+                    
+                    if (updateRequestAnswer == null)
+                        continue;
+
+                    if (!string.IsNullOrEmpty(updateRequestAnswer.Statement))
+                    {
+                        targetAnswer.Statement = updateRequestAnswer.Statement.Trim();
+                    }
+
+                    if (updateRequestAnswer.IsCorrect != null) {
+                        targetAnswer.IsCorrectAnswer = updateRequestAnswer.IsCorrect.Value;
+                    }
+
+                }   
+            }
+
+            _db.SaveChanges();
+            return Ok(ConvertToResponse(targetQuestion));
+
+        }
 
 
-        //    return Ok();
-        //}
-
-        
         [HttpDelete]
         public IActionResult DeletQuestionById([FromQuery]int? id , [FromQuery] bool isHardDelete)
         {
@@ -148,10 +177,9 @@ namespace Sep2026.QuizConsoleAppWebApi.Controllers
             }
             
             int status = _db.SaveChanges();
-            return status > 0 ? Ok("Successfully deleted") : StatusCode(StatusCodes.Status500InternalServerError, "Couldn't delete");
+            return status > 0 ? Ok("Successfully deleted") : BadRequest("Couldn't delete");
 
         }
-
 
         //Entity to Dto converter
         private QuestionResponse ConvertToResponse(Question q)
@@ -160,6 +188,7 @@ namespace Sep2026.QuizConsoleAppWebApi.Controllers
             {
                 Id = q.Id,
                 Statement = q.Statement,
+                CategoryId = q.CategoryId,
                 AnswersList = q.Answers.Select(a => new AnswerResponse { Id = a.Id, IsCorrect = a.IsCorrectAnswer, Statement = a.Statement }).ToList()
 
             };
