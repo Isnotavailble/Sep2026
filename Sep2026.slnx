@@ -1,7 +1,7 @@
 <Solution>
+  <Project Path="Sep2026.GameShopWebApi/Sep2026.GameShopWebApi.csproj" Id="56c2fdf4-83bd-4e5c-a055-880712c0c490" />
   <Project Path="Sep2026.QuizConsoleApp.Database/Sep2026.QuizConsoleApp.Database.csproj" Id="05eb9c09-10ce-475c-8685-6c66d2d10ea6" />
   <Project Path="Sep2026.QuizConsoleApp/Sep2026.QuizConsoleApp.csproj" />
   <Project Path="Sep2026.QuizConsoleAppDapper/Sep2026.QuizConsoleAppDapper.csproj" Id="9877e6db-522b-41fb-a552-3c03f045f820" />
   <Project Path="Sep2026.QuizConsoleAppWebApi/Sep2026.QuizConsoleAppWebApi.csproj" Id="1135b5e0-29a9-4903-aa05-9aab1d5ad87d" />
-  <Project Path="Sep2026.QuizConsoleAppWebApiDapper/Sep2026.QuizConsoleAppWebApiDapper.csproj" Id="ed5cbc05-271a-4ec5-8466-f89d22999c2e" />
 </Solution>
