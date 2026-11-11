@@ -13,7 +13,7 @@
         public class UpdateRequest
         {
             public string? ConsoleNumber { get; set; }
-            public int? CategoryId { get; set; }
+            public int CategoryId { get; set; }
             public string? CurrentStatus { get; set; }
         }
         public class CreateRequest
