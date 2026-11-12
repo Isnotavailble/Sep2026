@@ -33,7 +33,9 @@ namespace Sep2026.GameShopWebApi.Models
         {
             public string? CustomerName { get; set; }
             public string? CustomerPhone { get; set; }
-            public string? BookingStatus { get; set; }
+            public DateTime? StartTime { get; set; }
+            public DateTime? EndTime { get; set; }
+            public string? BookingStatus { get; set; } //Pending,Confirmed,Cancelled
             public decimal? DepositAmount { get; set; }
         }
         public class OverlapResponse
@@ -43,6 +45,14 @@ namespace Sep2026.GameShopWebApi.Models
             public List<Response> OverlapBookings { get; set; } = new List<Response>();
 
 
+        }
+        //BookingStatusTypes
+        public enum StatusTypes
+        {
+            Pending, // not sure or not paying valid deposite
+            Confirmed,// after paying valid deposite
+            Completed,// customer arrived (dead end )
+            Cancelled// dead end 
         }
     }
 }

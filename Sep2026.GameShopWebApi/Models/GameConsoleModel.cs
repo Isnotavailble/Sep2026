@@ -20,5 +20,12 @@
         {
             public int CategoryId { get; set; } = 0;
         }
+
+        public enum CurrentStatusTypes
+        {
+            Available,
+            Taken,
+            Unavailable
+        }
     }
 }

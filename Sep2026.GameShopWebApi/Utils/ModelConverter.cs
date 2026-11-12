@@ -60,9 +60,5 @@ namespace Sep2026.GameShopWebApi.Utils
             };
         }
 
-        public BookingModel.OverlapResponse ConvertBookingOverlapResponse()
-        {
-
-        }
     }
 }
