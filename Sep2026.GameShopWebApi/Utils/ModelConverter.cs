@@ -39,5 +39,30 @@ namespace Sep2026.GameShopWebApi.Utils
                 IsDeleted = game.IsDeleted,
             };
         }
+
+        public BookingModel.Response ConvertBookingResponse(Booking booking)
+        {
+            return new BookingModel.Response
+            {
+                Id = booking.Id,
+                ConsoleId = booking.ConsoleId,
+                CustomerName = booking.CustomerName,
+                CustomerPhone = booking.CustomerPhone,
+                StartTime = booking.StartTime,
+                EndTime = booking.EndTime,
+                TotalHours = booking.TotalHours,
+                TotalAmount = booking.TotalAmount,
+                DepositAmount = booking.DepositAmount,
+                BookingStatus = booking.BookingStatus,
+                CreatedAt = booking.CreatedAt,
+                UpdatedAt = booking.UpdatedAt,
+                IsDeleted = booking.IsDeleted,
+            };
+        }
+
+        public BookingModel.OverlapResponse ConvertBookingOverlapResponse()
+        {
+
+        }
     }
 }
