@@ -21,8 +21,8 @@ namespace Sep2026.GameShopWebApi.Models
         public class CreateRequest
         {
             public int? BookingId { get; set; }
-            public int ConsoleId { get; set; }
-            public int? GameId { get; set; }
+            public int? ConsoleId { get; set; }
+            public int? GameId { get; set; } = null;
             public DateTime? StartTime { get; set; }
             public DateTime? EndTime { get; set; }
             public decimal PaidAmount { get; set; }
