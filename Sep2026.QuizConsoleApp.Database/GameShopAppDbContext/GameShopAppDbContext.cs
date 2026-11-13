@@ -92,7 +92,6 @@ public partial class GameShopAppDbContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.PaidAmount).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.SessionStatus).HasMaxLength(20);
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TotalHours).HasColumnType("decimal(4, 2)");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(sysdatetime())");

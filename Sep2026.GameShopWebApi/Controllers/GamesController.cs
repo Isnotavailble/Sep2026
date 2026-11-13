@@ -130,13 +130,15 @@ namespace Sep2026.GameShopWebApi.Controllers
             if (targetGame == null)
                 return NotFound($"Game with Id {id} doesn't exist.");
 
+            //block delete if child exist.
+            bool isSessionExist = _db.GameSessions.Any(s => s.GameId == id && s.IsDeleted == false);
+
+            if (isSessionExist)
+                return BadRequest($"Game '{targetGame.Title}' has game session. Try to move or delete them first.");
+
+            //delete
             if (isHardDelete)
             {
-                int sessionCount = _db.GameSessions.Count(s => s.GameId == id);
-
-                if (sessionCount > 0)
-                    return BadRequest($"Game '{targetGame.Title}' has {sessionCount} game session(s). Only soft delete is allowed.");
-
                 _db.Games.Remove(targetGame);
             }
             else

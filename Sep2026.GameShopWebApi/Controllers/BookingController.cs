@@ -27,25 +27,40 @@ namespace Sep2026.GameShopWebApi.Controllers
             var bookings = _db.Bookings.ToList().Select(_modelConverter.ConvertBookingResponse);
             return Ok(bookings);
         }
+        //fast check endpoint for onwer to check conflict so that owner doesn't have to look every booking (filter endpoint)
         [HttpGet("check")]
         public IActionResult CheckBookings([FromQuery] DateTime? reqStartTime, [FromQuery] DateTime? reqEndTime)
         {
             if (!reqStartTime.HasValue || !reqEndTime.HasValue)
                 return BadRequest("StartTime and EndTime must be defined.");
 
+            //find the conflict booking times between requested interval
             var overlappedBookings = _db.Bookings
                 .Where(booking =>
                        booking.StartTime < reqEndTime.Value &&
                        booking.EndTime > reqStartTime.Value &&
+                       booking.BookingStatus.ToLower() != "completed" &&
+                       booking.BookingStatus.ToLower() != "cancelled" &&
                        booking.IsDeleted == false
                        )
                 .ToList();
 
+            var overlappedSessions = _db.GameSessions
+                .Where(session =>
+                    session.StartTime < reqStartTime.Value &&
+                    session.EndTime > reqEndTime.Value &&
+                    session.IsDeleted == false
+                )
+                .ToList();
+
             var overlapBookingResponses = overlappedBookings.Select(_modelConverter.ConvertBookingResponse).ToList();
-            var reponse = new BookingModel.OverlapResponse {
+            var overlapSessionResponses = overlappedSessions.Select(_modelConverter.ConvertGameSessionResponse).ToList();
+            var reponse = new BookingModel.OverlapResponse
+            {
                 ReqStartTime = reqStartTime,
                 ReqEndTime = reqEndTime,
-                OverlapBookings = overlapBookingResponses
+                OverlapBookings = overlapBookingResponses,
+                OverlapSessions = overlapSessionResponses
             };
 
             return Ok(reponse);
@@ -71,7 +86,11 @@ namespace Sep2026.GameShopWebApi.Controllers
             //join category to get hourlyRate
             var validConsole = _db.GameConsoles
                 .Include(console => console.Category)
-                .FirstOrDefault(g => g.Id == createRequest.ConsoleId);
+                .FirstOrDefault(g => 
+                    g.Id == createRequest.ConsoleId &&
+                    g.IsDeleted == false &&
+                    g.CurrentStatus.ToLower() != "unavailable"
+                );
 
             if (validConsole == null)
                 return BadRequest($"Console with Id {createRequest.ConsoleId} doesn't exist. ");
@@ -96,17 +115,24 @@ namespace Sep2026.GameShopWebApi.Controllers
 
             //check booking 
             int existingbookingCount = _db.Bookings
-                .Count(booking => 
+                .Count(booking =>
                     booking.ConsoleId == validConsole.Id &&
                     booking.StartTime < createRequest.EndTime.Value &&
-                    booking.EndTime > createRequest.StartTime.Value);
+                    booking.EndTime > createRequest.StartTime.Value &&
+                    booking.BookingStatus.ToLower() != "completed" &&
+                    booking.BookingStatus.ToLower() != "cancelled" &&
+                    booking.IsDeleted == false
+
+                    );
 
             //check sessions ( GameSession )
             int existingSessioncount = _db.GameSessions
                 .Count(session => 
                     session.ConsoleId == validConsole.Id &&
                     session.StartTime < createRequest.EndTime.Value &&
-                    session.EndTime > createRequest.StartTime.Value);
+                    session.EndTime > createRequest.StartTime.Value &&
+                    session.IsDeleted == false
+                    );
 
             if (existingbookingCount > 0 || existingSessioncount > 0)
                 return Conflict($"Time schedule conflict with {existingSessioncount} Sessions and {existingbookingCount} Bookings.Try to adjust the time.");
@@ -120,11 +146,12 @@ namespace Sep2026.GameShopWebApi.Controllers
 
             //customer must pay atleast one session as deposit if they booking ( to make sure customer will arrive )
             //note : if customer paid valid desposit ammount,keep that seat for this booking.
+            
             string bookingStatus = "Pending";
-            if (createRequest.DepositAmount > validConsole.Category.HourlyRate)
+            if (createRequest.DepositAmount >= validConsole.Category.HourlyRate)
             {
                 bookingStatus = "Confirmed";
-                validConsole.CurrentStatus = "Taken";
+                //validConsole.CurrentStatus = "Taken";
             }
                 
 
@@ -139,6 +166,7 @@ namespace Sep2026.GameShopWebApi.Controllers
                 CustomerPhone = createRequest.CustomerPhone,
                 StartTime = createRequest.StartTime.Value,
                 EndTime = createRequest.EndTime.Value,
+                DepositAmount = createRequest.DepositAmount,
                 TotalHours = totalHours,
                 TotalAmount = totalAmount,
                 BookingStatus = bookingStatus,
@@ -165,8 +193,8 @@ namespace Sep2026.GameShopWebApi.Controllers
                 return BadRequest($"Booking with Id {id} is not found.");
 
             //block dead end state (cancelled and completed )
-            if (targetBooking.BookingStatus.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) ||
-                targetBooking.BookingStatus.Equals("Completed",StringComparison.OrdinalIgnoreCase))
+           if (targetBooking.BookingStatus.ToLower() == "completed" || 
+                targetBooking.BookingStatus.ToLower() == "cancelled")
 
                 return BadRequest($"Booking is already {targetBooking.BookingStatus.ToLower()}.");
 
@@ -225,17 +253,25 @@ namespace Sep2026.GameShopWebApi.Controllers
                 // find overlap booking for this console.
                 int bookingOverlapCount = _db.Bookings
                     .Count(booking =>
-                        booking.Id != targetBooking.Id && 
+                        booking.Id != targetBooking.Id &&  //exclude itself
                         booking.StartTime < updateRequest.EndTime &&
                         booking.EndTime > updateRequest.StartTime &&
                         booking.ConsoleId == targetBooking.ConsoleId &&
-                        booking.BookingStatus != "Completed" &&
-                        booking.BookingStatus != "Cancelled" &&
+                        booking.BookingStatus.ToLower() != "completed" &&
+                        booking.BookingStatus.ToLower() != "cancelled" &&
                         booking.IsDeleted == false
+                    );
+                int sessionCount = _db.GameSessions
+                    .Count( session =>
+                        session.BookingId == targetBooking.Id &&
+                        session.StartTime < updateRequest.EndTime &&
+                        session.EndTime > updateRequest.StartTime &&                       
+                        session.IsDeleted == false
+                        
                     );
 
                 if (bookingOverlapCount > 0)
-                    return Conflict($"Cannot update booking time.{bookingOverlapCount} bookings already booked.");
+                    return Conflict($"Cannot update booking time.{bookingOverlapCount} bookings and {sessionCount} sessions already booked.");
 
                 targetBooking.StartTime = updateRequest.StartTime.Value;
                 targetBooking.EndTime = updateRequest.EndTime.Value;
@@ -275,15 +311,16 @@ namespace Sep2026.GameShopWebApi.Controllers
             var targetBooking = _db.Bookings.FirstOrDefault(b => b.Id == id);
             if (targetBooking == null)
                 return NotFound($"Booking with Id {id} doesn't exist");
+            
+            //block delete if child exsit
+            //not
+            bool isSessionExist = _db.GameSessions.Any(s => s.BookingId == id && s.IsDeleted == false);
+            if (isSessionExist)
+                return BadRequest("Booking with Id {id} having session records.Try to move or delete them first.");
 
             //block hard delete if 
             if (isHardDelete)
             {
-                int sessionCount = _db.GameSessions.Count(s => s.BookingId == id);
-
-                if (sessionCount > 0)
-                    return BadRequest($"Booking with Id {id} has {sessionCount} game session(s). Only soft delete is allowed.");
-
                 _db.Bookings.Remove(targetBooking);
             }
             else
@@ -301,10 +338,11 @@ namespace Sep2026.GameShopWebApi.Controllers
         private bool IsValidBookingStatus(string inputType)
         {
             List<BookingModel.StatusTypes> types = Enum.GetValues<BookingModel.StatusTypes>().ToList();
-            int count = types.Count(t => t.ToString().Equals(inputType, StringComparison.OrdinalIgnoreCase));
+            bool isValid = types.Any(t => t.ToString().Equals(inputType, StringComparison.OrdinalIgnoreCase));
 
-            return count > 0;
+            return isValid;
         }
+        
 
     }
 }

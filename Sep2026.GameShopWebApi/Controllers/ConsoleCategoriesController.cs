@@ -57,7 +57,7 @@ namespace Sep2026.GameShopWebApi.Controllers
             _db.ConsoleCategories.Add(newCategory);
             int status = _db.SaveChanges();
 
-            return status > 0 ? Ok(newCategory) : BadRequest("Fail to create new console category");
+            return status > 0 ? Ok(_modelConverter.ConvertConsoleCategoryResponse(newCategory)) : BadRequest("Fail to create new console category");
 
         }
 
@@ -88,18 +88,19 @@ namespace Sep2026.GameShopWebApi.Controllers
         {
             var targetCategory = _db.ConsoleCategories.FirstOrDefault(c => c.Id == id);
             if (targetCategory == null) return NotFound("Category with this Id doesn't exsit");
+
+            //block delete
+            bool isConsoleExist = _db.GameConsoles.Any(console => console.CategoryId == targetCategory.Id && console.IsDeleted == false);
+            bool isGameExist = targetCategory.Games.Any(game => game.CategoryId == targetCategory.Id && game.IsDeleted == false);
+
+            if (isConsoleExist || isGameExist)
+            {
+                return BadRequest($"Category {targetCategory.Name} having consoles and games.Try to remove them first.");
+            }
+
             //hard delete
             if (isHardDelete == true)
             {
-                //count child entity first to avoid fk or unwanted cascade delete.
-
-                int consolesCount = _db.GameConsoles.Count(g => g.CategoryId == targetCategory.Id);
-                int gamesCount = targetCategory.Games.Count(g => g.CategoryId == targetCategory.Id);
-
-                if (consolesCount > 0 || gamesCount > 0)
-                {
-                    return BadRequest($"Category {targetCategory.Name} having 1 or more consoles and games.Only soft-delete is allowed.");
-                }
 
                 _db.ConsoleCategories.Remove(targetCategory);
                 

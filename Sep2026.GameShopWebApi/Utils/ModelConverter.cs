@@ -60,5 +60,23 @@ namespace Sep2026.GameShopWebApi.Utils
             };
         }
 
+        public GameSessionModel.Response ConvertGameSessionResponse(GameSession session)
+        {
+            return new GameSessionModel.Response
+            {
+                Id = session.Id,
+                BookingId = session.BookingId,
+                ConsoleId = session.ConsoleId,
+                GameId = session.GameId,
+                StartTime = session.StartTime,
+                EndTime = session.EndTime,
+                TotalHours = session.TotalHours,
+                TotalAmount = session.TotalAmount,
+                PaidAmount = session.PaidAmount,
+                CreatedAt = session.CreatedAt,
+                UpdatedAt = session.UpdatedAt,
+                IsDeleted = session.IsDeleted,
+            };
+        }
     }
 }

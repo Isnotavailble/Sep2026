@@ -23,8 +23,6 @@ public partial class GameSession
 
     public decimal PaidAmount { get; set; }
 
-    public string SessionStatus { get; set; } = null!;
-
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }

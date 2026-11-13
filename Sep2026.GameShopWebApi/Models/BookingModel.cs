@@ -1,3 +1,5 @@
+using Sep2026.QuizConsoleApp.Database.GameShopAppDbContext;
+
 namespace Sep2026.GameShopWebApi.Models
 {
     public class BookingModel
@@ -43,6 +45,7 @@ namespace Sep2026.GameShopWebApi.Models
             public DateTime? ReqStartTime { get; set; } = null;
             public DateTime? ReqEndTime { get; set; } = null;
             public List<Response> OverlapBookings { get; set; } = new List<Response>();
+            public List<GameSessionModel.Response> OverlapSessions { get; set; } = new List<GameSessionModel.Response>();
 
 
         }
