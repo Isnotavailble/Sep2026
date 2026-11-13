@@ -31,9 +31,9 @@ namespace Sep2026.GameShopWebApi.Models
         public class UpdateRequest
         {
             public int? GameId { get; set; }
+            public DateTime? StartTime { get; set; }
             public DateTime? EndTime { get; set; }
             public decimal? PaidAmount { get; set; }
-            public string? SessionStatus { get; set; }
         }
     }
 }

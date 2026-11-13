@@ -180,6 +180,7 @@ namespace Sep2026.GameShopWebApi.Controllers
             {
                 totalAmount = reqConsole.Category.HourlyRate * totalHours;
             }
+            reqConsole.CurrentStatus = "Taken";
             
 
             GameSession newGameSession = new GameSession
@@ -204,6 +205,148 @@ namespace Sep2026.GameShopWebApi.Controllers
             int status = _db.SaveChanges();
             return status > 0 ? Ok(_modelConverter.ConvertGameSessionResponse(newGameSession)) : BadRequest("Fail to create session");
 
+        }
+
+        // PATCH update game session
+        [HttpPatch("{id}")]
+        public IActionResult UpdateGameSession(int id, GameSessionModel.UpdateRequest updateRequest)
+        {
+            if (updateRequest == null)
+                return BadRequest("Must define a body");
+
+            bool hasChanges = false;
+            var targetSession = _db.GameSessions.FirstOrDefault(s => s.Id == id);
+
+            if (targetSession == null)
+                return NotFound($"Game session with Id {id} doesn't exist.");
+
+            if (targetSession.IsDeleted)
+                return BadRequest("Cannot update a deleted game session.");
+
+            // Update game with stock swap
+            if (updateRequest.GameId.HasValue && updateRequest.GameId != targetSession.GameId)
+            {
+                var newGame = _db.Games.FirstOrDefault(g => g.Id == updateRequest.GameId.Value && g.IsDeleted == false);
+                if (newGame == null)
+                    return NotFound("Game is not found.");
+
+                if (newGame.AvailableStock <= 0)
+                    return BadRequest($"'{newGame.Title}' is currently out of stock.");
+
+                // Return previous game back to stock
+                if (targetSession.GameId.HasValue)
+                {
+                    var oldGame = _db.Games.FirstOrDefault(g => g.Id == targetSession.GameId.Value);
+                    if (oldGame != null)
+                    {
+                        oldGame.AvailableStock++;
+                    }
+                }
+
+                // Take new game from stock
+                newGame.AvailableStock--;
+                targetSession.GameId = newGame.Id;
+                hasChanges = true;
+            }
+
+            // Update start and end time or schedule
+            if (updateRequest.StartTime.HasValue || updateRequest.EndTime.HasValue)
+            {
+                DateTime newStartTime = updateRequest.StartTime ?? targetSession.StartTime;
+                DateTime newEndTime = updateRequest.EndTime ?? targetSession.EndTime;
+
+                if (newStartTime >= newEndTime)
+                    return BadRequest("EndTime should not come first.");
+
+                // Find overlap booking for this console
+                bool isBookingExist = _db.Bookings
+                    .Any(booking =>
+                        booking.ConsoleId == targetSession.ConsoleId &&
+                        booking.StartTime < newEndTime &&
+                        booking.EndTime > newStartTime &&
+                        booking.BookingStatus.ToLower() != "completed" &&
+                        booking.BookingStatus.ToLower() != "cancelled" &&
+                        booking.IsDeleted == false
+                    );
+
+                // Find overlap session for this console (excluding itself)
+                bool isSessionExist = _db.GameSessions
+                    .Any(session =>
+                        session.Id != targetSession.Id &&
+                        session.ConsoleId == targetSession.ConsoleId &&
+                        session.StartTime < newEndTime &&
+                        session.EndTime > newStartTime &&
+                        session.IsDeleted == false
+                    );
+
+                if (isBookingExist || isSessionExist)
+                    return Conflict($"Cannot update session time.Conflict with sessions and bookings.");
+
+                targetSession.StartTime = newStartTime;
+                targetSession.EndTime = newEndTime;
+
+                // Recalculate duration, totalHours, and totalAmount
+                TimeSpan duration = newEndTime - newStartTime;
+                decimal totalHours = (decimal)duration.TotalHours;
+
+                decimal? hourlyRate = _db.GameConsoles
+                    .Include(c => c.Category)
+                    .FirstOrDefault(c => c.Id == targetSession.ConsoleId)?.Category?.HourlyRate ?? 0;
+
+                if (!hourlyRate.HasValue)
+                    return NotFound("Invalid console category");
+
+                targetSession.TotalHours = totalHours;
+                targetSession.TotalAmount = totalHours * hourlyRate.Value;
+                hasChanges = true;
+            }
+
+            // Update PaidAmount
+            if (updateRequest.PaidAmount.HasValue)
+            {
+                if (updateRequest.PaidAmount.Value < 0)
+                    return BadRequest("Paid amount cannot be negative.");
+
+                targetSession.PaidAmount = updateRequest.PaidAmount.Value;
+                hasChanges = true;
+            }
+
+            if (!hasChanges)
+                return BadRequest("No changes provided.");
+
+            targetSession.UpdatedAt = DateTime.Now;
+
+            int saveStatus = _db.SaveChanges();
+            return saveStatus > 0 ? Ok(_modelConverter.ConvertGameSessionResponse(targetSession)) : BadRequest("Unable to update game session.");
+        }
+
+        //delete game session with soft delete support
+        [HttpDelete("{id}")]
+        public IActionResult DeleteGameSession(int id, [FromQuery] bool isHardDelete = false)
+        {
+            var targetSession = _db.GameSessions.FirstOrDefault(s => s.Id == id);
+            if (targetSession == null)
+                return NotFound($"Game session with Id {id} doesn't exist");
+
+            //block delete if linked to an active booking
+            bool isBookingExist = targetSession.BookingId.HasValue && 
+                                  _db.Bookings.Any(b => b.Id == targetSession.BookingId.Value && b.IsDeleted == false);
+
+            if (isBookingExist)
+                return BadRequest($"Game session with Id {id} is linked to a booking. Try to cancel or delete the booking first.");
+
+            if (isHardDelete)
+            {
+                _db.GameSessions.Remove(targetSession);
+            }
+            else
+            {
+                targetSession.IsDeleted = true;
+                targetSession.UpdatedAt = DateTime.Now;
+            }
+
+            int status = _db.SaveChanges();
+            return status > 0 ? Ok("Successfully deleted") : BadRequest("Failed to delete game session");
         }
 
     }
