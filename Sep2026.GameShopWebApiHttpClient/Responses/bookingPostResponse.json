@@ -1,0 +1,15 @@
+{
+  "id": 4002,
+  "consoleId": 1005,
+  "customerName": "Kaung Kaung",
+  "customerPhone": "09777344728",
+  "startTime": "2026-11-16T23:28:44.1490874+06:30",
+  "endTime": "2026-11-17T01:28:44.1490874+06:30",
+  "totalHours": 2,
+  "totalAmount": 30000.00,
+  "depositAmount": 5000,
+  "bookingStatus": "Pending",
+  "createdAt": "2026-11-16T23:28:45.1222291+06:30",
+  "updatedAt": "2026-11-16T23:28:45.1226454+06:30",
+  "isDeleted": false
+}

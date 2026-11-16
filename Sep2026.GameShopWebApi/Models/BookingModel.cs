@@ -2,6 +2,7 @@ using Sep2026.QuizConsoleApp.Database.GameShopAppDbContext;
 
 namespace Sep2026.GameShopWebApi.Models
 {
+    
     public class BookingModel
     {
         public class Response
