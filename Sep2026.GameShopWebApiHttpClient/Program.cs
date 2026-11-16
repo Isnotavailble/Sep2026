@@ -66,7 +66,13 @@ if (bookingCreateResponse.IsSuccessStatusCode)
     //string response = JsonSerializer.Deserialize<>();
 }
 
+HttpResponseMessage deleteResponse = await httpClient.DeleteAsync(@$"{port}/api/booking/4002?isHardDelete=false");
+if (deleteResponse.IsSuccessStatusCode)
+{
+    string response = await deleteResponse.Content.ReadAsStringAsync();
+    Console.WriteLine(response);
 
+}
 
 //HttpResponseMessage bookingPostResponse = await 
 
